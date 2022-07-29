@@ -40,8 +40,10 @@ jobs:
         
       - name: NPM install
         shell: pwsh
+        working-directory: ./src/Foundation
         run: npm ci
         
       - name: NPM build
         shell: pwsh
+        working-directory: ./src/Foundation
         run:  npm run dev
