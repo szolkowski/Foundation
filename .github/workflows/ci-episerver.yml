@@ -26,6 +26,10 @@ jobs:
         uses: actions/setup-node@v2
         with:
           node-version: '14.18.2'
+
+      - name: Setup Episerver/Optimizely nuget feed
+        shell: pwsh
+        run: dotnet nuget add source https://nuget.optimizely.com/feed/packages.svc -n Optimizely
           
       - name: Restore dependencies
         run: dotnet restore
