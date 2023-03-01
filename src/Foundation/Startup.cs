@@ -1,21 +1,19 @@
 ﻿using Advanced.CMS.AdvancedReviews;
+using Advanced.CMS.GroupingHeader;
 using EPiServer.Authorization;
+using EPiServer.Cms.TinyMce.SpellChecker;
 using EPiServer.ContentApi.Cms;
 using EPiServer.ContentApi.Cms.Internal;
 using EPiServer.ContentDefinitionsApi;
 using EPiServer.ContentManagementApi;
 using EPiServer.Data;
-using EPiServer.Framework.Web.Resources;
 using EPiServer.Labs.BlockEnhancements;
+using EPiServer.Labs.ContentManager;
 using EPiServer.Marketing.Testing.Web.Initializers;
 using EPiServer.OpenIDConnect;
-using EPiServer.ServiceLocation;
+using EPiServer.ServiceApi;
 using EPiServer.Shell.Modules;
-using EPiServer.Web;
-using EPiServer.Web.Routing;
 using Foundation.Features.Checkout.Payments;
-using Foundation.Infrastructure;
-using Foundation.Infrastructure.Cms.Extensions;
 using Foundation.Infrastructure.Cms.ModelBinders;
 using Foundation.Infrastructure.Cms.Users;
 using Foundation.Infrastructure.Display;
@@ -34,9 +32,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Optimizely.Labs.MarketingAutomationIntegration.ODP;
-using System;
 using System.IO;
-using System.Linq;
 using UNRVLD.ODP.VisitorGroups.Initilization;
 
 namespace Foundation
@@ -96,6 +92,7 @@ namespace Foundation
             services.TryAddEnumerable(Microsoft.Extensions.DependencyInjection.ServiceDescriptor.Singleton(typeof(IFirstRequestInitializer), typeof(ContentInstaller)));
             services.AddDetection();
             services.AddTinyMceConfiguration();
+            services.AddTinyMceSpellChecker();
 
             //site specific
             services.AddEmbeddedLocalization<Startup>();
@@ -140,7 +137,12 @@ namespace Foundation
                 options.DisableScopeValidation = true;
             });
 
-            services.AddOpenIDConnect<SiteUser>(options =>
+            services.AddOpenIDConnect<SiteUser>(
+                useDevelopmentCertificate: true,
+                signingCertificate: null,
+                encryptionCertificate: null,
+                createSchema: true,
+                options =>
             {
                 //options.RequireHttps = !_webHostingEnvironment.IsDevelopment();
                 var application = new OpenIDConnectApplication()
@@ -152,6 +154,7 @@ namespace Foundation
                         ContentDeliveryApiOptionsDefaults.Scope,
                         ContentManagementApiOptionsDefaults.Scope,
                         ContentDefinitionsApiOptionsDefaults.Scope,
+                        ServiceApiOptionsDefaults.Scope
                     }
                 };
 
@@ -192,7 +195,7 @@ namespace Foundation
                 //var blockEnhancements = new BlockEnhancementsOptions
                 options.LocalContentFeatureEnabled = false;
                 options.HideForThisFolder = false;
-                options.AllowQuickEditOnSharedBlocks = true;
+                options.AllowQuickEditOnSharedBlocks = false;
                 options.PublishPageWithBlocks = true;
             });
 
@@ -224,6 +227,13 @@ namespace Foundation
             // Add A/B Testing Gadget
             // https://github.com/episerver/content-ab-testing
             services.AddABTesting(_configuration.GetConnectionString("EPiServerDB"));
+
+            // Add ContentManager
+            services.AddContentManager();
+
+            // Add GroupingHeader
+            // https://github.com/advanced-cms/grouping-header/
+            services.AddGroupingHeader();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
