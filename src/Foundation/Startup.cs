@@ -15,6 +15,7 @@ using EPiServer.OpenIDConnect;
 using EPiServer.ServiceApi;
 using EPiServer.Shell.Modules;
 using Foundation.Features.Checkout.Payments;
+using Foundation.Features.Hangfire;
 using Foundation.Infrastructure.Cms.ModelBinders;
 using Foundation.Infrastructure.Cms.Users;
 using Foundation.Infrastructure.Display;
@@ -24,6 +25,8 @@ using Geta.NotFoundHandler.Optimizely.Infrastructure.Configuration;
 using Geta.Optimizely.Categories.Configuration;
 using Geta.Optimizely.Categories.Find.Infrastructure.Initialization;
 using Geta.Optimizely.Categories.Infrastructure.Initialization;
+using Hangfire;
+using Hangfire.Console;
 using Mediachase.Commerce.Anonymous;
 using Mediachase.Commerce.Orders;
 using Microsoft.AspNetCore.Builder;
@@ -253,6 +256,17 @@ namespace Foundation
 
             // Adds the DAM selector button
             services.AddDamSelectButton();
+
+            // Add Hangfire services.
+            services.AddHangfire(configuration => configuration
+                .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+                .UseSimpleAssemblyNameTypeSerializer()
+                .UseRecommendedSerializerSettings()
+                .UseSqlServerStorage(_configuration.GetConnectionString("EcfSqlConnection"))
+                .UseConsole());
+
+            // Add the processing server as IHostedService
+            services.AddHangfireServer();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -280,7 +294,21 @@ namespace Foundation
                 endpoints.MapControllers();
                 endpoints.MapRazorPages();
                 endpoints.MapContent();
+                endpoints.MapHangfireDashboard();
             });
+
+            var dashboardOptions = new DashboardOptions
+            {
+                Authorization = new[]
+                {
+                    new HangfireAuthorizationFilter()
+                },
+                AppPath = null
+            };
+            // Order of middlewares is important! Add it after Authentication and Authorization in order to have a user in the context.
+            app.UseHangfireDashboard("/episerver/backoffice/Plugins/hangfire", dashboardOptions);
+
+            RecurringJob.AddOrUpdate<ExampleRecurringJob>(nameof(ExampleRecurringJob) + "_Id", x => x.Execute(null), Cron.Daily);
         }
     }
 }
