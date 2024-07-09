@@ -1,13 +1,14 @@
 ﻿using Advanced.CMS.AdvancedReviews;
+using Advanced.CMS.BulkEdit;
 using Advanced.CMS.GroupingHeader;
 using EPiServer.Authorization;
 using EPiServer.Cms.TinyMce.SpellChecker;
 using EPiServer.ContentApi.Cms;
 using EPiServer.ContentApi.Cms.Internal;
+using EPiServer.ContentApi.Commerce;
 using EPiServer.ContentDefinitionsApi;
 using EPiServer.ContentManagementApi;
 using EPiServer.Data;
-using EPiServer.Labs.BlockEnhancements;
 using EPiServer.Labs.ContentManager;
 using EPiServer.Marketing.Testing.Web.Initializers;
 using EPiServer.OpenIDConnect;
@@ -33,6 +34,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Optimizely.Labs.MarketingAutomationIntegration.ODP;
 using System.IO;
+using TinymceDamPicker;
 using UNRVLD.ODP.VisitorGroups.Initilization;
 
 namespace Foundation
@@ -123,6 +125,15 @@ namespace Foundation
                 o.MaximumSearchResults = 100;
             });
 
+            // Content Delivery Forms API
+            services.AddFormsApi();
+
+            // Content Delivery Commerce API
+            services.AddCommerceApi<SiteUser>(OpenIDConnectOptionsDefaults.AuthenticationScheme, o =>
+            {
+                o.DisableScopeValidation = true;
+            });
+
             // Content Definitions API
             services.AddContentDefinitionsApi(options =>
             {
@@ -136,6 +147,9 @@ namespace Foundation
                 // Accept anonymous calls
                 options.DisableScopeValidation = true;
             });
+
+            // Service API configuration
+            services.AddServiceApiAuthorization(OpenIDConnectOptionsDefaults.AuthenticationScheme);
 
             services.AddOpenIDConnect<SiteUser>(
                 useDevelopmentCertificate: true,
@@ -154,6 +168,7 @@ namespace Foundation
                         ContentDeliveryApiOptionsDefaults.Scope,
                         ContentManagementApiOptionsDefaults.Scope,
                         ContentDefinitionsApiOptionsDefaults.Scope,
+                        CommerceApiOptionsDefaults.Scope,
                         ServiceApiOptionsDefaults.Scope
                     }
                 };
@@ -163,6 +178,16 @@ namespace Foundation
                 application.RedirectUris.Add(new Uri("https://oauth.pstmn.io/v1/callback"));
                 options.Applications.Add(application);
                 options.AllowResourceOwnerPasswordFlow = true;
+
+                options.Applications.Add(new OpenIDConnectApplication()
+                {
+                    ClientId = "anon-client",
+                    Scopes = {
+                        CommerceApiOptionsDefaults.Scope,
+                        "anonymous_id"
+                    }
+                });
+                options.AllowAnonymousFlow = true;
             });
             
             services.AddOpenIDConnectUI();
@@ -187,17 +212,6 @@ namespace Foundation
             //    {
             //        options.JsonSerializerOptions.PropertyNamingPolicy = null;
             //    });
-
-            // Add BlockEnhancements
-            services.AddBlockEnhancements();
-            services.Configure<BlockEnhancementsOptions>(options =>
-            {
-                //var blockEnhancements = new BlockEnhancementsOptions
-                options.LocalContentFeatureEnabled = false;
-                options.HideForThisFolder = false;
-                options.AllowQuickEditOnSharedBlocks = false;
-                options.PublishPageWithBlocks = true;
-            });
 
             // Add AdvancedReviews
             services.AddAdvancedReviews();
@@ -234,6 +248,11 @@ namespace Foundation
             // Add GroupingHeader
             // https://github.com/advanced-cms/grouping-header/
             services.AddGroupingHeader();
+            // Bulk Edit add-on
+            services.AddBulkEdit();
+
+            // Adds the DAM selector button
+            services.AddDamSelectButton();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -254,6 +273,7 @@ namespace Foundation
             app.UseCors();
             app.UseAuthentication();
             app.UseAuthorization();
+            app.UseAnonymousCartMerging();
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllerRoute(name: "Default", pattern: "{controller}/{action}/{id?}");
