@@ -10,7 +10,7 @@ namespace Foundation.Features.CatalogContent.Product
         DisplayName = "Generic Product",
         Description = "Generic product supports mutiple products")]
     [ImageUrl("/icons/cms/pages/CMS-icon-page-23.png")]
-    public class GenericProduct : ProductContent, IProductRecommendations, IFoundationContent/*, IDashboardItem*/
+    public class GenericProduct : ProductContent, IProductRecommendations, IFoundationContent, ICatalogTraversalItem/*, IDashboardItem*/
     {
         #region Content
         [Searchable]
@@ -177,6 +177,8 @@ namespace Foundation.Features.CatalogContent.Product
         public virtual string Scripts { get; set; }
 
         #endregion
+        
+        public virtual DateTime? LastUpdated { get; set; }
 
         public override void SetDefaultValues(ContentType contentType)
         {

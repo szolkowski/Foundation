@@ -7,7 +7,7 @@ namespace Foundation.Features.CatalogContent.Variation
 {
     [CatalogContentType(DisplayName = "Generic Variant", GUID = "1aaa2c58-c424-4c37-81b0-77e76d254eb0", Description = "Generic variant supports multiple variation types")]
     [ImageUrl("/icons/cms/pages/CMS-icon-page-23.png")]
-    public class GenericVariant : VariationContent, IProductRecommendations, IFoundationContent/*, IDashboardItem*/
+    public class GenericVariant : VariationContent, IProductRecommendations, IFoundationContent, ICatalogTraversalItem/*, IDashboardItem*/
     {
         [Tokenize]
         [Searchable]
@@ -111,6 +111,8 @@ namespace Foundation.Features.CatalogContent.Variation
         public virtual string Scripts { get; set; }
 
         #endregion
+        
+        public virtual DateTime? LastUpdated { get; set; }
 
         public override void SetDefaultValues(ContentType contentType)
         {

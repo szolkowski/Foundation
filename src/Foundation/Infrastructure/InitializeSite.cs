@@ -149,6 +149,11 @@ namespace Foundation.Infrastructure
             _services.AddSingleton<ISchemaDataMapper<GenericProduct>, GenericProductSchemaDataMapper>();
             _services.AddSingleton<ISchemaDataMapper<LocationItemPage>, LocationItemPageSchemaDataMapper>();
             _services.AddSingleton<PromotionEngineContentLoader, FoundationPromotionEngineContentLoader>();
+
+            _services.AddTransient<ICatalogTraversalService, CatalogTraversalService>();
+            _services.AddTransient<ILastSyncRepository, LastSyncRepository>();
+            _services.AddTransient<IExternalSystemClient, ExternalSystemClient>();
+            _services.AddTransient<IExternalBatchClient, ExternalBatchClient>();
         }
 
         public void Initialize(InitializationEngine context)
